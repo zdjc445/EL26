@@ -1,6 +1,6 @@
 # 工程文档索引
 
-状态：书面评审中
+状态：已批准
 
 基线日期：2026-07-17
 
@@ -29,6 +29,11 @@
 - [开发生命周期](engineering/development-lifecycle.md)：从 Spec 到发布的工业化变更流程。
 - [测试与评测策略](engineering/test-and-evaluation-strategy.md)：测试层级、RAG 评测、负载及故障验证。
 - [发布与运维标准](engineering/release-and-operations.md)：环境、CI/CD、SLO、备份、恢复和事故管理。
+- [Time V1 工业化交付路线图](engineering/v1-delivery-roadmap.md)：阶段顺序、依赖、门禁和需求追踪。
+
+### 实施计划
+
+- [阶段 0 工程基础实施计划](superpowers/plans/2026-07-17-phase-0-engineering-foundation.md)：工程骨架、测试命令、OpenAPI、容器与 GitHub Actions。
 
 ### 架构决策
 
@@ -53,4 +58,4 @@
 → 指标观测与复盘
 ```
 
-本次文档基线获批后，下一步只能是编写详细实施计划；在实施计划获批前不得开始项目脚手架或功能代码。
+设计基线已获批。交付顺序和阶段门禁见 [Time V1 工业化交付路线图](engineering/v1-delivery-roadmap.md)；在对应阶段实施计划获批前不得开始该阶段的项目脚手架或功能代码。
