@@ -138,7 +138,7 @@ class ProjectCommandTests(unittest.TestCase):
             ["uv", "run", "--project", "backend", "pip-audit", "--local"],
             ["uv", "run", "--project", "backend", "licensecheck", "--zero", "--ignore-licenses", "mpl", "--only-licenses", "mit", "apache", "bsd", "isc", "mpl", "python", "unlicense", "0bsd", "cc0-1.0", "--requirements-paths", "backend/pyproject.toml", "--groups", "dev"],
             ["pnpm", "--dir", "frontend", "audit", "--audit-level", "high"],
-            ["pnpm", "--dir", "frontend", "exec", "license-checker-rseidelsohn", "--start", ".", "--unknown", "--onlyAllow", "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;Python-2.0;PSF-2.0;MPL-2.0;Unlicense;CC0-1.0;CC-BY-4.0"],
+            ["pnpm", "--dir", "frontend", "exec", "license-checker-rseidelsohn", "--start", ".", "--unknown", "--excludePrivatePackages", "--onlyAllow", "MIT;MIT-0;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;Python-2.0;PSF-2.0;MPL-2.0;Unlicense;CC0-1.0;CC-BY-3.0;CC-BY-4.0;BlueOak-1.0.0;(MIT AND CC-BY-3.0);(MIT OR CC0-1.0)"],
             ["python", "-m", "compileall", "-q", "backend/src"],
             ["pnpm", "--dir", "frontend", "build"],
             ["pnpm", "--dir", "frontend", "test:e2e"],
@@ -258,8 +258,9 @@ GROUPS: dict[str, tuple[list[str], ...]] = {
             "--start",
             ".",
             "--unknown",
+            "--excludePrivatePackages",
             "--onlyAllow",
-            "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;Python-2.0;PSF-2.0;MPL-2.0;Unlicense;CC0-1.0;CC-BY-4.0",
+            "MIT;MIT-0;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;Python-2.0;PSF-2.0;MPL-2.0;Unlicense;CC0-1.0;CC-BY-3.0;CC-BY-4.0;BlueOak-1.0.0;(MIT AND CC-BY-3.0);(MIT OR CC0-1.0)",
         ],
     ),
     "build": (
@@ -2419,7 +2420,8 @@ Run: `python tools/project.py verify`
 
 Initial observed result: exit `1` only at the Python license gate described in Step 1A;
 all preceding format, lint, type, unit, integration, and contract gates pass. After
-Step 1A, rerun this exact command before creating CI files and require exit `0`.
+Steps 1A and 1B, rerun this exact command before creating CI files and require exit
+`0`.
 
 Run: `git diff --check`
 
@@ -2468,14 +2470,86 @@ unidentified or falls back to `UNKNOWN`.
 
 Run: `python tools/project.py verify`
 
-Expected: exit `0`; backend and frontend format, lint, type, unit, integration,
-contract, security, build, and Chromium E2E all pass before CI files are created.
+Initial observed result after the Python repair: exit `1` only at the Node license
+gate described in Step 1B; all preceding gates, including the repaired Python gate,
+pass. Complete Step 1B before requiring the full command to exit `0`.
 
 Commit this plan correction separately before changing the test or command runner:
 
 ```bash
 git add docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
 git commit -m "docs(plan): repair Python license gate"
+```
+
+- [ ] **Step 1B: Repair the exact Node license allowlist gate**
+
+Decision date: 2026-07-18. After Step 1A, the full gate exited `1` because
+`chownr==3.0.0` declares the SPDX identifier `BlueOak-1.0.0`. A complete local
+`license-checker-rseidelsohn` inventory then found the following previously omitted
+accepted classes and expressions:
+
+- `BlueOak-1.0.0`, used by eleven transitive development packages;
+- `MIT-0`, used by two CSS test dependencies;
+- `CC-BY-3.0`, used by the SPDX exception data package;
+- `(MIT AND CC-BY-3.0)` and `(MIT OR CC0-1.0)`, whose every constituent is in the
+  accepted set.
+
+The Blue Oak Council publishes `BlueOak-1.0.0` as a permissive model software
+license, and SPDX lists that exact identifier. Its notice, patent, reliability, and
+no-liability terms are preserved by normal dependency notice/SBOM handling. Creative
+Commons publishes `CC-BY-3.0` as an attribution license that permits commercial
+sharing and adaptation subject to attribution. Authoritative references:
+
+- `https://blueoakcouncil.org/license/1.0.0.html`
+- `https://spdx.org/licenses/BlueOak-1.0.0.html`
+- `https://creativecommons.org/licenses/by/3.0/`
+- `https://spdx.org/licenses/CC-BY-3.0`
+
+The inventory also reports the private root package `time-web` as `UNLICENSED`. Do
+not add `UNLICENSED` to the allowlist. Add `--excludePrivatePackages` so the command
+audits third-party dependencies rather than treating Time's intentionally private
+root package as one.
+
+First update the expected Node license command in
+`tools/tests/test_project.py::ProjectCommandTests::test_verify_runs_every_gate_in_order`:
+
+- insert `--excludePrivatePackages` immediately after `--unknown`;
+- replace the `--onlyAllow` value with the exact value below.
+
+```text
+MIT;MIT-0;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;Python-2.0;PSF-2.0;MPL-2.0;Unlicense;CC0-1.0;CC-BY-3.0;CC-BY-4.0;BlueOak-1.0.0;(MIT AND CC-BY-3.0);(MIT OR CC0-1.0)
+```
+
+Run: `uv run --project backend pytest tools/tests/test_project.py -q`
+
+Expected: FAIL because `tools/project.py` still emits the old Node command.
+
+Then make the identical argument changes in the `security` group in
+`tools/project.py`.
+
+Run: `uv run --project backend pytest tools/tests/test_project.py -q`
+
+Expected: both command-runner tests pass.
+
+Run the exact repaired Node license gate from the repository root:
+
+```bash
+pnpm --dir frontend exec license-checker-rseidelsohn --start . --unknown --excludePrivatePackages --onlyAllow "MIT;MIT-0;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;Python-2.0;PSF-2.0;MPL-2.0;Unlicense;CC0-1.0;CC-BY-3.0;CC-BY-4.0;BlueOak-1.0.0;(MIT AND CC-BY-3.0);(MIT OR CC0-1.0)"
+```
+
+Expected: exit `0`; no dependency has an unknown or unapproved license, and the
+private `time-web` root is excluded rather than allowed as `UNLICENSED`.
+
+Run: `python tools/project.py verify`
+
+Expected: exit `0`; every local quality, security, build, and Chromium E2E gate
+passes before CI files are created.
+
+Commit this plan correction separately before changing the test or command runner:
+
+```bash
+git add docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "docs(plan): repair Node license gate"
 ```
 
 - [ ] **Step 2: Add the pinned GitHub Actions workflow**
@@ -2702,7 +2776,7 @@ Create `docs/engineering/dependency-policy.md`:
 
 本策略约束 Time 构建和运行依赖，不向仓库源代码授予开源许可证。
 
-Python 依赖必须由 `licensecheck==2026.0.8` 识别为 MIT、Apache、BSD、ISC、MPL、Python、Unlicense、0BSD 或 CC0 类许可证。Node.js 依赖必须由 `license-checker-rseidelsohn==5.0.1` 识别为 `MIT`、`Apache-2.0`、`BSD-2-Clause`、`BSD-3-Clause`、`ISC`、`0BSD`、`Python-2.0`、`PSF-2.0`、`MPL-2.0`、`Unlicense`、`CC0-1.0` 或 `CC-BY-4.0`。
+Python 依赖必须由 `licensecheck==2026.0.8` 识别为 MIT、Apache、BSD、ISC、MPL、Python、Unlicense、0BSD 或 CC0 类许可证。Node.js 依赖必须由 `license-checker-rseidelsohn==5.0.1` 识别为 `MIT`、`MIT-0`、`Apache-2.0`、`BSD-2-Clause`、`BSD-3-Clause`、`ISC`、`0BSD`、`Python-2.0`、`PSF-2.0`、`MPL-2.0`、`Unlicense`、`CC0-1.0`、`CC-BY-3.0`、`CC-BY-4.0` 或 `BlueOak-1.0.0`。SPDX `AND`/`OR` 表达式只有在每个组成许可证都位于上述白名单时才可接受；当前工具输出中的精确组合必须显式固定。私有根包通过 `--excludePrivatePackages` 排除，绝不把 `UNLICENSED` 加入第三方依赖白名单。
 
 未知许可证、猜测许可证、GPL、AGPL、LGPL、SSPL、Commons Clause 或自定义限制性条款默认阻断合并。接受例外前必须保存许可证原文、法律或授权判断、影响范围、Owner 和重新评估条件；需要长期保留的架构性例外通过 ADR 审批。
 
