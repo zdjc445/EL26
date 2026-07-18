@@ -30,6 +30,8 @@
 - [测试与评测策略](engineering/test-and-evaluation-strategy.md)：测试层级、RAG 评测、负载及故障验证。
 - [发布与运维标准](engineering/release-and-operations.md)：环境、CI/CD、SLO、备份、恢复和事故管理。
 - [Time V1 工业化交付路线图](engineering/v1-delivery-roadmap.md)：阶段顺序、依赖、门禁和需求追踪。
+- [GitHub CI 检查契约](engineering/ci-checks.md)
+- [依赖接受策略](engineering/dependency-policy.md)
 
 ### 实施计划
 

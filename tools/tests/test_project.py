@@ -72,6 +72,8 @@ class ProjectCommandTests(unittest.TestCase):
                 "backend",
                 "licensecheck",
                 "--zero",
+                "--ignore-licenses",
+                "mpl",
                 "--only-licenses",
                 "mit",
                 "apache",
@@ -81,7 +83,7 @@ class ProjectCommandTests(unittest.TestCase):
                 "python",
                 "unlicense",
                 "0bsd",
-                "cc0",
+                "cc0-1.0",
                 "--requirements-paths",
                 "backend/pyproject.toml",
                 "--groups",
@@ -97,8 +99,13 @@ class ProjectCommandTests(unittest.TestCase):
                 "--start",
                 ".",
                 "--unknown",
+                "--excludePrivatePackages",
                 "--onlyAllow",
-                "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;Python-2.0;PSF-2.0;MPL-2.0;Unlicense;CC0-1.0;CC-BY-4.0",
+                (
+                    "MIT;MIT-0;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;"
+                    "Python-2.0;PSF-2.0;MPL-2.0;Unlicense;CC0-1.0;CC-BY-3.0;"
+                    "CC-BY-4.0;BlueOak-1.0.0;(MIT AND CC-BY-3.0);(MIT OR CC0-1.0)"
+                ),
             ],
             ["python", "-m", "compileall", "-q", "backend/src"],
             [PNPM_EXECUTABLE, "--dir", "frontend", "build"],
