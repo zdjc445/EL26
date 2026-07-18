@@ -1896,6 +1896,7 @@ git commit -m "build(api): enforce generated OpenAPI contract"
 ### Task 7: Executable modular-boundary rule
 
 **Files:**
+- Modify: `backend/pyproject.toml`
 - Create: `backend/tests/__init__.py`
 - Create: `backend/tests/architecture/__init__.py`
 - Create: `backend/tests/architecture/rules.py`
@@ -2030,6 +2031,31 @@ Expected: exit 0.
 Run: `uv run --project backend mypy --config-file backend/pyproject.toml backend/tests/architecture`
 
 Expected: exit 0 with no issues.
+
+- [ ] **Step 4A: Add the test package root to mypy's explicit search path**
+
+Decision date: 2026-07-18. Focused pytest passed 4 tests and Ruff passed, but the exact
+focused mypy command could not resolve `tests.architecture.rules`. The existing
+`mypy_path` contains only `backend/src`; with explicit package bases enabled, the
+`tests` package also requires `backend` as a declared search root. The controller
+verified this root through `MYPYPATH` and the same command passed all 3 source files.
+
+Change `[tool.mypy].mypy_path` in `backend/pyproject.toml` to the cross-platform,
+comma-separated value
+`"$MYPY_CONFIG_FILE_DIR/src,$MYPY_CONFIG_FILE_DIR"`. Mypy documents comma as a
+platform-independent separator for this option. Do not change the tested import or add
+an ignore rule.
+
+Run: `uv run --project backend mypy --config-file backend/pyproject.toml backend/tests/architecture`
+
+Expected: exit 0 with `Success: no issues found in 3 source files`.
+
+Commit the search-root correction separately:
+
+```bash
+git add backend/pyproject.toml docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "fix(backend): expose test package to mypy"
+```
 
 - [ ] **Step 5: Commit the architecture gate**
 

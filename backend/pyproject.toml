@@ -51,5 +51,5 @@ select = ["E", "F", "I", "UP", "B", "ASYNC", "S", "RUF"]
 python_version = "3.13"
 strict = true
 warn_unreachable = true
-mypy_path = "$MYPY_CONFIG_FILE_DIR/src"
+mypy_path = "$MYPY_CONFIG_FILE_DIR/src,$MYPY_CONFIG_FILE_DIR"
 explicit_package_bases = true
