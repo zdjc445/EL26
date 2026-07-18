@@ -2859,6 +2859,33 @@ Run: `git push --set-upstream origin phase/p0-engineering-foundation`
 
 Expected: push succeeds to `git@github.com:zdjc445/EL26.git`.
 
+- [ ] **Step 7A: Open the pull request that triggers CI**
+
+Decision date: 2026-07-18. The phase branch push succeeded, but no workflow run was
+created. The committed workflow intentionally triggers on `push` only for `main` and
+on every `pull_request`; a phase-branch push alone therefore cannot produce the
+required remote check runs. A read-only GitHub query confirmed that the repository's
+default branch is exactly `main` and that no pull request exists for
+`phase/p0-engineering-foundation`.
+
+Commit and push this plan correction before creating the pull request:
+
+```bash
+git add docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "docs(plan): add pull request CI trigger"
+git push origin phase/p0-engineering-foundation
+```
+
+Create one draft pull request with exact base, head, title, and body:
+
+```bash
+gh pr create --repo zdjc445/EL26 --draft --base main --head phase/p0-engineering-foundation --title "Phase 0: engineering foundation" --body "Implements the approved Phase 0 engineering foundation. See docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md for scope and verification."
+```
+
+Expected: one draft pull request is created and the `pull_request` event starts the
+`CI` workflow. Do not create a duplicate if a read-only query finds an existing pull
+request for the exact head branch.
+
 After the workflow starts, read the actual check-run names from GitHub. They must equal `quality`, `security`, `containers (time-api)`, and `containers (time-web)`. If GitHub reports different names, update both `docs/engineering/ci-checks.md` and `.github/branch-protection.json` from the observed values before configuring branch protection; do not normalize or guess them.
 
 Run: `gh auth status`
