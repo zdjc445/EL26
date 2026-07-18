@@ -1861,6 +1861,31 @@ git add backend/pyproject.toml docs/superpowers/plans/2026-07-17-phase-0-enginee
 git commit -m "fix(backend): disambiguate mypy namespace modules"
 ```
 
+- [ ] **Step 6B: Isolate pytest module imports across test partitions**
+
+Decision date: 2026-07-18. After the Task 6 feature commit, the combined command
+`uv run --project backend pytest backend/tests tools/tests -q` failed during collection
+because pytest's default `prepend` import mode placed both test packages named `system`
+in the same import namespace. The current pytest executable documents `prepend` as the
+default. The controller reran the identical five-test collection with
+`--import-mode=importlib` and all five tests passed.
+
+Append `--import-mode=importlib` to `[tool.pytest.ini_options].addopts` in
+`backend/pyproject.toml`. Do not split the complete suite to hide the collision, mutate
+`sys.path`, remove required package files, or add test package markers solely for the
+runner.
+
+Run: `uv run --project backend pytest backend/tests tools/tests -q`
+
+Expected: 5 tests PASS in one collection.
+
+Commit the pytest import correction separately:
+
+```bash
+git add backend/pyproject.toml docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "fix(test): isolate pytest module imports"
+```
+
 - [ ] **Step 7: Commit the generated contract boundary**
 
 ```bash

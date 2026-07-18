@@ -30,7 +30,7 @@ dev = [
 packages = ["src/time_agent"]
 
 [tool.pytest.ini_options]
-addopts = "--strict-config --strict-markers"
+addopts = "--strict-config --strict-markers --import-mode=importlib"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 markers = [
