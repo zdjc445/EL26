@@ -1144,6 +1144,7 @@ git commit -m "build(frontend): establish locked TypeScript toolchain"
 - Create: `frontend/src/styles/index.css`
 - Create: `frontend/playwright.config.ts`
 - Create: `frontend/tests/e2e/system-status.spec.ts`
+- Modify: `frontend/src/test/setup.ts`
 - Modify: `frontend/vite.config.ts`
 - Modify: `docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md`
 
@@ -1290,6 +1291,37 @@ Commit the discovery correction separately:
 ```bash
 git add frontend/vite.config.ts docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
 git commit -m "fix(frontend): isolate unit test discovery"
+```
+
+- [ ] **Step 2B: Register the approved centralized React test cleanup**
+
+Decision date: 2026-07-18. The user approved this correction after the first GREEN
+suite run showed that the first component render remained in the DOM for the second
+test. The second test passed when run alone. Because this project imports Vitest APIs
+explicitly and does not enable `test.globals`, register React Testing Library cleanup
+in the existing setup file instead of enabling globals or adding per-test cleanup.
+
+Update `frontend/src/test/setup.ts`:
+
+```typescript
+import "@testing-library/jest-dom/vitest";
+import { cleanup } from "@testing-library/react";
+import { afterEach } from "vitest";
+
+afterEach(() => {
+  cleanup();
+});
+```
+
+Run: `pnpm --dir frontend test:unit`
+
+Expected: both component tests PASS with no retained DOM from the preceding test.
+
+Commit the cleanup correction separately:
+
+```bash
+git add frontend/src/test/setup.ts docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "fix(frontend): enforce component test cleanup"
 ```
 
 - [ ] **Step 3: Implement the typed API boundary**
