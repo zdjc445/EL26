@@ -136,7 +136,7 @@ class ProjectCommandTests(unittest.TestCase):
             ["uv", "run", "--project", "backend", "pytest", "backend/tests/integration", "-q"],
             ["python", "tools/check_contract.py"],
             ["uv", "run", "--project", "backend", "pip-audit", "--local"],
-            ["uv", "run", "--project", "backend", "licensecheck", "--zero", "--only-licenses", "mit", "apache", "bsd", "isc", "mpl", "python", "unlicense", "0bsd", "cc0", "--requirements-paths", "backend/pyproject.toml", "--groups", "dev"],
+            ["uv", "run", "--project", "backend", "licensecheck", "--zero", "--ignore-licenses", "mpl", "--only-licenses", "mit", "apache", "bsd", "isc", "mpl", "python", "unlicense", "0bsd", "cc0-1.0", "--requirements-paths", "backend/pyproject.toml", "--groups", "dev"],
             ["pnpm", "--dir", "frontend", "audit", "--audit-level", "high"],
             ["pnpm", "--dir", "frontend", "exec", "license-checker-rseidelsohn", "--start", ".", "--unknown", "--onlyAllow", "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;Python-2.0;PSF-2.0;MPL-2.0;Unlicense;CC0-1.0;CC-BY-4.0"],
             ["python", "-m", "compileall", "-q", "backend/src"],
@@ -231,6 +231,8 @@ GROUPS: dict[str, tuple[list[str], ...]] = {
             "backend",
             "licensecheck",
             "--zero",
+            "--ignore-licenses",
+            "mpl",
             "--only-licenses",
             "mit",
             "apache",
@@ -240,7 +242,7 @@ GROUPS: dict[str, tuple[list[str], ...]] = {
             "python",
             "unlicense",
             "0bsd",
-            "cc0",
+            "cc0-1.0",
             "--requirements-paths",
             "backend/pyproject.toml",
             "--groups",
@@ -2404,6 +2406,8 @@ git commit -m "build(container): add reproducible application images"
 - Create: `docs/engineering/ci-checks.md`
 - Create: `docs/engineering/dependency-policy.md`
 - Modify: `docs/README.md`
+- Modify: `tools/project.py`
+- Modify: `tools/tests/test_project.py`
 
 **Interfaces:**
 - Consumes: every repository command and image definition from Tasks 1–8.
@@ -2413,11 +2417,66 @@ git commit -m "build(container): add reproducible application images"
 
 Run: `python tools/project.py verify`
 
-Expected: exit 0; backend and frontend format, lint, type, unit, integration, contract, build, and Chromium E2E all pass.
+Initial observed result: exit `1` only at the Python license gate described in Step 1A;
+all preceding format, lint, type, unit, integration, and contract gates pass. After
+Step 1A, rerun this exact command before creating CI files and require exit `0`.
 
 Run: `git diff --check`
 
 Expected: exit 0.
+
+- [ ] **Step 1A: Repair the exact Python license allowlist gate**
+
+Decision date: 2026-07-18. The first Task 9 baseline `python tools/project.py verify`
+exited `1` in `licensecheck==2026.0.8`. `pathspec==1.1.1` reports the classifier
+`Mozilla Public License 2.0 (MPL 2.0)`, which the approved dependency policy accepts,
+but `licensecheck` still applies its compatibility matrix after `--only-licenses`.
+Because Time intentionally does not grant the repository source code an open-source
+license, do not pass a false project license merely to make the matrix green.
+
+The installed tool source and a focused probe also prove that the existing `cc0`
+token is not recognized and becomes `UNKNOWN`; the exact supported token is
+`cc0-1.0`. An allowlist containing `UNKNOWN` violates the approved policy.
+
+First update the expected licensecheck command in
+`tools/tests/test_project.py::ProjectCommandTests::test_verify_runs_every_gate_in_order`:
+
+- insert `--ignore-licenses`, `mpl` immediately after `--zero`;
+- replace `cc0` with `cc0-1.0`.
+
+Run: `uv run --project backend pytest tools/tests/test_project.py -q`
+
+Expected: FAIL because `tools/project.py` still emits the old command.
+
+Then make the identical two argument changes in the `security` group in
+`tools/project.py`. `--ignore-licenses mpl` is the tool's explicit mechanism for an
+accepted license class and does not skip a package by name; `--only-licenses` remains
+in force for every other class.
+
+Run: `uv run --project backend pytest tools/tests/test_project.py -q`
+
+Expected: both command-runner tests pass.
+
+Run the exact repaired license gate:
+
+```bash
+uv run --project backend licensecheck --zero --ignore-licenses mpl --only-licenses mit apache bsd isc mpl python unlicense 0bsd cc0-1.0 --requirements-paths backend/pyproject.toml --groups dev
+```
+
+Expected: exit `0`, `pathspec` is accepted as MPL, and no warning says that `CC0` is
+unidentified or falls back to `UNKNOWN`.
+
+Run: `python tools/project.py verify`
+
+Expected: exit `0`; backend and frontend format, lint, type, unit, integration,
+contract, security, build, and Chromium E2E all pass before CI files are created.
+
+Commit this plan correction separately before changing the test or command runner:
+
+```bash
+git add docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "docs(plan): repair Python license gate"
+```
 
 - [ ] **Step 2: Add the pinned GitHub Actions workflow**
 
@@ -2712,7 +2771,7 @@ Resolve every blocking finding and rerun affected and full verification.
 - [ ] **Step 6: Commit the CI gate and phase evidence**
 
 ```bash
-git add .github/branch-protection.json .github/workflows/ci.yml docs
+git add .github/branch-protection.json .github/workflows/ci.yml docs tools/project.py tools/tests/test_project.py
 git commit -m "ci(repo): enforce phase zero quality gates"
 ```
 
