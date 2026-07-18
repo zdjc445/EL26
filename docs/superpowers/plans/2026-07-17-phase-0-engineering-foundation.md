@@ -950,6 +950,7 @@ Create `frontend/tsconfig.app.json`:
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
+    "tsBuildInfoFile": "./node_modules/.cache/tsconfig.app.tsbuildinfo",
     "jsx": "react-jsx",
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -973,6 +974,7 @@ Create `frontend/tsconfig.node.json`:
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "noEmit": true,
+    "tsBuildInfoFile": "./node_modules/.cache/tsconfig.node.tsbuildinfo",
     "types": ["node"]
   },
   "include": ["vite.config.ts", "playwright.config.ts", "tests/e2e/**/*.ts", "eslint.config.js"]
@@ -1099,6 +1101,28 @@ Expected: exit 0 with zero warnings.
 Run: `pnpm --dir frontend format:check`
 
 Expected: exit 0.
+
+- [ ] **Step 4A: Keep TypeScript build metadata out of the source tree**
+
+Decision date: 2026-07-18. The user approved this correction after controller
+verification showed that a successful `tsc -b` created untracked
+`frontend/tsconfig.app.tsbuildinfo` and `frontend/tsconfig.node.tsbuildinfo` files.
+
+Set `tsBuildInfoFile` in `tsconfig.app.json` to
+`./node_modules/.cache/tsconfig.app.tsbuildinfo` and in `tsconfig.node.json` to
+`./node_modules/.cache/tsconfig.node.tsbuildinfo`. Remove only the two generated
+root-level `.tsbuildinfo` files after verifying their exact paths. Do not add a broad
+`.gitignore` exception.
+
+Run `pnpm --dir frontend typecheck` twice. Both runs must exit 0, and
+`git status --short --untracked-files=all` must show no generated `.tsbuildinfo` file.
+
+Commit the correction separately:
+
+```bash
+git add frontend/tsconfig.app.json frontend/tsconfig.node.json docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "fix(frontend): isolate TypeScript build metadata"
+```
 
 - [ ] **Step 5: Commit the locked frontend toolchain**
 
