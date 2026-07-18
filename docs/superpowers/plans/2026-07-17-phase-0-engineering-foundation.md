@@ -1195,7 +1195,11 @@ describe("SystemStatusPage", () => {
     expect(screen.getByRole("heading", { name: "Time" })).toBeInTheDocument();
     expect(await screen.findByText("服务正常")).toBeInTheDocument();
     expect(screen.getByText("API 0.1.0")).toBeInTheDocument();
-    expect(fetch).toHaveBeenCalledWith("/api/v1/health/live", { signal: expect.any(AbortSignal) });
+    const fetchMock = vi.mocked(fetch);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const firstCall = fetchMock.mock.calls[0];
+    expect(firstCall?.[0]).toBe("/api/v1/health/live");
+    expect(firstCall?.[1]?.signal).toBeInstanceOf(AbortSignal);
   });
 
   it("does not claim health when the API request fails", async () => {
@@ -1322,6 +1326,24 @@ Commit the cleanup correction separately:
 ```bash
 git add frontend/src/test/setup.ts docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
 git commit -m "fix(frontend): enforce component test cleanup"
+```
+
+- [ ] **Step 2C: Use the approved type-safe fetch assertion**
+
+Decision date: 2026-07-18. The user approved this correction after the GREEN unit
+suite and typecheck passed but the locked `@typescript-eslint/no-unsafe-assignment`
+rule rejected Vitest's `expect.any(AbortSignal)` return type. Keep the rule enabled
+with no inline or configuration exemption. Assert the typed mock call count, URL, and
+`AbortSignal` instance separately, as shown in the Step 1 test. The controller
+validated the candidate test through the current ESLint configuration with zero
+errors and zero warnings before approval.
+
+Commit this plan correction separately; keep the corrected test in the Task 5 feature
+commit because the test file is part of the new status slice:
+
+```bash
+git add docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "docs(plan): approve type-safe fetch assertion"
 ```
 
 - [ ] **Step 3: Implement the typed API boundary**
