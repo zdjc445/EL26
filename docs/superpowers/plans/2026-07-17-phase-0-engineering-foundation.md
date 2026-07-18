@@ -1925,12 +1925,13 @@ def test_rule_detects_framework_imports() -> None:
 
 
 def test_rule_allows_standard_library_and_own_domain_imports() -> None:
-    source = "from dataclasses import dataclass\nfrom time_agent.modules.calendar.domain import Event\n"
+    source = (
+        "from dataclasses import dataclass\n"
+        "from time_agent.modules.calendar.domain import Event\n"
+    )
 
     assert find_forbidden_imports(source) == frozenset()
-    assert (
-        find_cross_module_imports(source, current_module="calendar") == frozenset()
-    )
+    assert find_cross_module_imports(source, current_module="calendar") == frozenset()
 
 
 def test_rule_detects_cross_module_internal_imports() -> None:
@@ -1999,19 +2000,21 @@ def find_cross_module_imports(source: str, current_module: str) -> frozenset[str
     return frozenset(imported_modules)
 ```
 
-- [ ] **Step 3A: Apply the required Ruff-safe assertion layout**
+- [ ] **Step 3A: Apply the required Ruff-safe source layout**
 
-Decision date: 2026-07-18. The exact Step 1 assertion produced `E501` at 104
-characters under the locked 100-character Ruff policy. Keep the policy unchanged and
-wrap only that assertion with parentheses, as shown in Step 1. This is a formatting-only
-plan correction with no test semantic change.
+Decision date: 2026-07-18. The first correction misidentified the failing line. The
+exact Ruff location is the 104-character `source` assignment in the standard-library
+and own-domain test, not its assertion. Keep the locked 100-character policy unchanged,
+split the same source value into two implicitly concatenated string literals as shown
+in Step 1, and restore the already-compliant assertion to one line. The resulting test
+input is byte-for-byte identical.
 
 Commit the plan correction separately; keep the corrected test in the Task 7 feature
 commit because it is a new file:
 
 ```bash
 git add docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
-git commit -m "docs(plan): correct architecture test formatting"
+git commit -m "docs(plan): correct architecture test source layout"
 ```
 
 - [ ] **Step 4: Run architecture and static verification**
