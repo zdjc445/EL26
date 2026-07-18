@@ -1614,6 +1614,9 @@ git commit -m "feat(system): add frontend service status slice"
 - Create: `frontend/src/shared/api/schema.d.ts` (generated)
 - Create: `tools/check_contract.py`
 - Modify: `frontend/src/features/system/api.ts`
+- Modify: `tools/project.py`
+- Modify: `tools/tests/test_project.py`
+- Modify: `docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md`
 - Delete: `backend/tests/integration/.gitkeep`
 
 **Interfaces:**
@@ -1707,42 +1710,46 @@ Create `tools/check_contract.py`:
 ```python
 from __future__ import annotations
 
+import os
 import subprocess
 import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 COMMITTED_TYPES = ROOT / "frontend" / "src" / "shared" / "api" / "schema.d.ts"
+PNPM_EXECUTABLE = "pnpm.cmd" if os.name == "nt" else "pnpm"
 
 
 def main() -> int:
-    subprocess.run(
-        [
-            "uv",
-            "run",
-            "--project",
-            "backend",
-            "python",
-            "backend/scripts/export_openapi.py",
-            "--check",
-        ],
+    openapi_command = [
+        "uv",
+        "run",
+        "--project",
+        "backend",
+        "python",
+        "backend/scripts/export_openapi.py",
+        "--check",
+    ]
+    subprocess.run(  # noqa: S603
+        openapi_command,
         cwd=ROOT,
         check=True,
     )
 
     with tempfile.TemporaryDirectory() as directory:
         generated = Path(directory) / "schema.d.ts"
-        subprocess.run(
-            [
-                "pnpm",
-                "--dir",
-                "frontend",
-                "exec",
-                "openapi-typescript",
-                "../contracts/openapi.json",
-                "-o",
-                str(generated),
-            ],
+        types_command = [
+            PNPM_EXECUTABLE,
+            "--dir",
+            "frontend",
+            "exec",
+            "openapi-typescript",
+            "../contracts/openapi.json",
+            "-o",
+            str(generated),
+        ]
+        subprocess.run(  # noqa: S603
+            types_command,
             cwd=ROOT,
             check=True,
         )
@@ -1754,6 +1761,42 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+```
+
+- [ ] **Step 4A: Resolve the approved cross-platform subprocess contract**
+
+Decision date: 2026-07-18. The user authorized continuing with the proposed
+cross-platform correction after the exact `contract-generate` command created the
+OpenAPI JSON and then failed before TypeScript generation. On Windows,
+`shutil.which("pnpm")` resolved `D:\\nvm\\nodejs\\pnpm.CMD`; a direct Python
+subprocess using `pnpm` raised `FileNotFoundError`, while the same subprocess using
+`pnpm.cmd` returned the locked version `11.13.1`.
+
+First update `tools/tests/test_project.py` to import `PNPM_EXECUTABLE` from
+`tools.project` and use it for every expected pnpm command. Run the focused test before
+production changes and record the expected import failure because the constant does
+not exist yet.
+
+Then update `tools/project.py`: import `os`, define
+`PNPM_EXECUTABLE = "pnpm.cmd" if os.name == "nt" else "pnpm"`, and use the constant
+as the executable token for every pnpm command in `GROUPS`. Keep `shell=False` through
+the existing list-form `subprocess.run`; do not modify PATH.
+
+Use the same platform selection in the new `tools/check_contract.py`, as shown in Step
+4. Store each static subprocess command in a local list and retain the precise
+`# noqa: S603` at the invocation; do not relax Ruff configuration. Apply Ruff's import
+ordering to the new integration test without semantic changes.
+
+Run: `uv run --project backend pytest tools/tests/test_project.py -q`
+
+Expected: 2 tests PASS on Windows with `pnpm.cmd`; the same test expects `pnpm` on
+Linux CI.
+
+Commit the existing runner correction separately from the generated contract feature:
+
+```bash
+git add tools/project.py tools/tests/test_project.py docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "fix(repo): resolve pnpm subprocess on Windows"
 ```
 
 - [ ] **Step 5: Generate both committed contracts**

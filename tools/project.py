@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+PNPM_EXECUTABLE = "pnpm.cmd" if os.name == "nt" else "pnpm"
 
 GROUPS: dict[str, tuple[list[str], ...]] = {
     "format": (
@@ -20,7 +22,7 @@ GROUPS: dict[str, tuple[list[str], ...]] = {
             "backend",
             "tools",
         ],
-        ["pnpm", "--dir", "frontend", "format"],
+        [PNPM_EXECUTABLE, "--dir", "frontend", "format"],
     ),
     "format-check": (
         [
@@ -36,7 +38,7 @@ GROUPS: dict[str, tuple[list[str], ...]] = {
             "backend",
             "tools",
         ],
-        ["pnpm", "--dir", "frontend", "format:check"],
+        [PNPM_EXECUTABLE, "--dir", "frontend", "format:check"],
     ),
     "lint": (
         [
@@ -51,7 +53,7 @@ GROUPS: dict[str, tuple[list[str], ...]] = {
             "backend",
             "tools",
         ],
-        ["pnpm", "--dir", "frontend", "lint"],
+        [PNPM_EXECUTABLE, "--dir", "frontend", "lint"],
     ),
     "typecheck": (
         [
@@ -66,7 +68,7 @@ GROUPS: dict[str, tuple[list[str], ...]] = {
             "backend/tests",
             "tools",
         ],
-        ["pnpm", "--dir", "frontend", "typecheck"],
+        [PNPM_EXECUTABLE, "--dir", "frontend", "typecheck"],
     ),
     "test-unit": (
         [
@@ -79,16 +81,16 @@ GROUPS: dict[str, tuple[list[str], ...]] = {
             "backend/tests/architecture",
             "-q",
         ],
-        ["pnpm", "--dir", "frontend", "test:unit"],
+        [PNPM_EXECUTABLE, "--dir", "frontend", "test:unit"],
     ),
     "test-integration": (
         ["uv", "run", "--project", "backend", "pytest", "backend/tests/integration", "-q"],
     ),
-    "test-e2e": (["pnpm", "--dir", "frontend", "test:e2e"],),
+    "test-e2e": ([PNPM_EXECUTABLE, "--dir", "frontend", "test:e2e"],),
     "contract-generate": (
         ["uv", "run", "--project", "backend", "python", "backend/scripts/export_openapi.py"],
         [
-            "pnpm",
+            PNPM_EXECUTABLE,
             "--dir",
             "frontend",
             "exec",
@@ -123,9 +125,9 @@ GROUPS: dict[str, tuple[list[str], ...]] = {
             "--groups",
             "dev",
         ],
-        ["pnpm", "--dir", "frontend", "audit", "--audit-level", "high"],
+        [PNPM_EXECUTABLE, "--dir", "frontend", "audit", "--audit-level", "high"],
         [
-            "pnpm",
+            PNPM_EXECUTABLE,
             "--dir",
             "frontend",
             "exec",
@@ -139,7 +141,7 @@ GROUPS: dict[str, tuple[list[str], ...]] = {
     ),
     "build": (
         ["python", "-m", "compileall", "-q", "backend/src"],
-        ["pnpm", "--dir", "frontend", "build"],
+        [PNPM_EXECUTABLE, "--dir", "frontend", "build"],
     ),
 }
 
