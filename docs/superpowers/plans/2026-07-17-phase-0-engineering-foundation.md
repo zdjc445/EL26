@@ -2657,17 +2657,33 @@ Add this link under the engineering section of `docs/README.md`; the roadmap and
 - [依赖接受策略](engineering/dependency-policy.md)
 ```
 
+- [ ] **Step 3A: Reuse the audited local registry override in the final gate**
+
+Decision date: 2026-07-18. Direct Docker Hub registry and authentication endpoints
+remain unreachable from the local execution environment, while Task 8 independently
+verified the exact pinned Python, Node, and Nginx digests through
+`m.daocloud.io/docker.io`. Use the same `DOCKERHUB_REGISTRY` build argument only for
+the two local Step 4 builds. Keep the Dockerfile default and GitHub Actions builds on
+`docker.io`; do not change image digests or daemon-global registry configuration.
+
+Commit this plan correction separately before creating Task 9 files:
+
+```bash
+git add docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "docs(plan): reuse local registry mirror in final gate"
+```
+
 - [ ] **Step 4: Run final local verification**
 
 Run: `python tools/project.py verify`
 
 Expected: exit 0 with all current-scope gates passing.
 
-Run: `docker build --file docker/backend.Dockerfile --tag time-api:p0 .`
+Run: `docker build --build-arg DOCKERHUB_REGISTRY=m.daocloud.io/docker.io --file docker/backend.Dockerfile --tag time-api:p0 .`
 
 Expected: exit 0.
 
-Run: `docker build --file docker/frontend.Dockerfile --tag time-web:p0 .`
+Run: `docker build --build-arg DOCKERHUB_REGISTRY=m.daocloud.io/docker.io --file docker/frontend.Dockerfile --tag time-web:p0 .`
 
 Expected: exit 0.
 
