@@ -1927,8 +1927,7 @@ def test_rule_detects_framework_imports() -> None:
 
 def test_rule_allows_standard_library_and_own_domain_imports() -> None:
     source = (
-        "from dataclasses import dataclass\n"
-        "from time_agent.modules.calendar.domain import Event\n"
+        "from dataclasses import dataclass\nfrom time_agent.modules.calendar.domain import Event\n"
     )
 
     assert find_forbidden_imports(source) == frozenset()
@@ -2005,17 +2004,18 @@ def find_cross_module_imports(source: str, current_module: str) -> frozenset[str
 
 Decision date: 2026-07-18. The first correction misidentified the failing line. The
 exact Ruff location is the 104-character `source` assignment in the standard-library
-and own-domain test, not its assertion. Keep the locked 100-character policy unchanged,
-split the same source value into two implicitly concatenated string literals as shown
-in Step 1, and restore the already-compliant assertion to one line. The resulting test
-input is byte-for-byte identical.
+and own-domain test, not its assertion. Ruff's formatter requires the unchanged single
+string literal inside a parenthesized assignment, as shown in Step 1; two adjacent
+literals are reformatted back into this layout. Keep the locked 100-character policy
+and the already-compliant assertion unchanged. The test input is byte-for-byte
+identical.
 
 Commit the plan correction separately; keep the corrected test in the Task 7 feature
 commit because it is a new file:
 
 ```bash
 git add docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
-git commit -m "docs(plan): correct architecture test source layout"
+git commit -m "docs(plan): align architecture test formatter layout"
 ```
 
 - [ ] **Step 4: Run architecture and static verification**
