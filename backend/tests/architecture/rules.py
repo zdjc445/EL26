@@ -6,13 +6,19 @@ FORBIDDEN_ROOTS = frozenset({"fastapi", "sqlalchemy", "langchain", "langgraph"})
 MODULES_ROOT = ("time_agent", "modules")
 
 
+def _expand_module_root_aliases(module: str, aliases: list[ast.alias]) -> tuple[str, ...]:
+    if tuple(module.split(".")) == MODULES_ROOT:
+        return tuple(".".join([module, alias.name]) for alias in aliases)
+    return (module,)
+
+
 def _absolute_imported_modules(source: str) -> frozenset[str]:
     modules: set[str] = set()
     for node in ast.walk(ast.parse(source)):
         if isinstance(node, ast.Import):
             modules.update(alias.name for alias in node.names)
         elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module is not None:
-            modules.add(node.module)
+            modules.update(_expand_module_root_aliases(node.module, node.names))
     return frozenset(modules)
 
 
@@ -28,11 +34,12 @@ def _relative_imported_modules(
         *(["__subpackage__"] * domain_subpackage_depth),
     ]
     parent_levels = node.level - 1
-    if parent_levels > len(source_package):
+    if parent_levels >= len(source_package):
         return ()
     base_package = source_package[: len(source_package) - parent_levels]
     if node.module is not None:
-        return (".".join([*base_package, node.module]),)
+        module = ".".join([*base_package, node.module])
+        return _expand_module_root_aliases(module, node.names)
     return tuple(".".join([*base_package, alias.name]) for alias in node.names)
 
 

@@ -53,6 +53,33 @@ def test_nested_domain_relative_imports_use_the_source_depth() -> None:
     ) == frozenset({"knowledge"})
 
 
+def test_rule_detects_absolute_module_root_alias_import() -> None:
+    source = "from time_agent.modules import knowledge\n"
+
+    assert find_cross_module_imports(source, current_module="calendar") == frozenset({"knowledge"})
+
+
+def test_rule_detects_relative_module_root_alias_imports() -> None:
+    direct_source = "from ....modules import knowledge\n"
+    nested_source = "from .....modules import knowledge\n"
+
+    assert find_cross_module_imports(
+        direct_source,
+        current_module="calendar",
+    ) == frozenset({"knowledge"})
+    assert find_cross_module_imports(
+        nested_source,
+        current_module="calendar",
+        domain_subpackage_depth=1,
+    ) == frozenset({"knowledge"})
+
+
+def test_invalid_relative_import_traversal_is_ignored() -> None:
+    source = "from .....time_agent.modules.knowledge import Document\n"
+
+    assert find_cross_module_imports(source, current_module="calendar") == frozenset()
+
+
 def test_repository_domain_files_respect_module_boundaries() -> None:
     violations: dict[str, dict[str, frozenset[str]]] = {}
     for module_path in (path for path in MODULES.iterdir() if path.is_dir()):

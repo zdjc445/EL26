@@ -2057,7 +2057,14 @@ git add backend/pyproject.toml docs/superpowers/plans/2026-07-17-phase-0-enginee
 git commit -m "fix(backend): expose test package to mypy"
 ```
 
-- [ ] **Step 4B: Close the reviewed relative-import boundary bypass**
+- [ ] **Step 5: Commit the architecture gate**
+
+```bash
+git add backend/tests
+git commit -m "test(architecture): enforce domain framework boundary"
+```
+
+- [ ] **Step 5A: Close the reviewed relative-import boundary bypass**
 
 Review date: 2026-07-18. Independent review and a controller probe demonstrated that
 `find_cross_module_imports("from ...knowledge.domain import Document\n", "calendar")`
@@ -2121,11 +2128,42 @@ git add backend/tests/architecture docs/superpowers/plans/2026-07-17-phase-0-eng
 git commit -m "fix(architecture): detect relative cross-module imports"
 ```
 
-- [ ] **Step 5: Commit the architecture gate**
+- [ ] **Step 5B: Close module-root alias and invalid-traversal gaps**
+
+Review date: 2026-07-18. Final review reproduced three remaining behaviors: absolute
+`from time_agent.modules import knowledge`, direct relative
+`from ....modules import knowledge`, and its nested-domain equivalent all returned an
+empty set; an invalid relative import whose parent traversal reached equality with the
+source package length was incorrectly reported as `knowledge`.
+
+Add three failing tests before changing `rules.py`: one for the absolute module-root
+alias, one for both direct and nested relative module-root aliases, and one proving
+that traversal beyond the top-level package produces no cross-module result. Each
+valid alias case must return `frozenset({"knowledge"})`; the invalid case
+`from .....time_agent.modules.knowledge import Document` at direct-domain depth must
+return an empty set.
+
+Then make the minimal general correction:
+
+- for absolute `ImportFrom` whose module is exactly `time_agent.modules`, append each
+  imported alias to the module path before cross-module classification;
+- do the same after a relative import resolves exactly to `time_agent.modules`;
+- reject relative resolution when `parent_levels >= len(source_package)`.
+
+Do not classify arbitrary imported symbols as modules when the `ImportFrom` base is
+deeper than `time_agent.modules`, and do not special-case `knowledge`.
+
+Run the focused architecture test first for RED and then GREEN.
+
+Expected GREEN: 9 tests PASS.
+
+Run focused and full Ruff, mypy, pytest, and contract checks.
+
+Commit the second review fix separately:
 
 ```bash
-git add backend/tests
-git commit -m "test(architecture): enforce domain framework boundary"
+git add backend/tests/architecture docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "fix(architecture): close module-root alias bypass"
 ```
 
 ### Task 8: Reproducible backend and frontend containers
