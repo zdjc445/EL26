@@ -2209,13 +2209,35 @@ frontend/test-results
 docs
 ```
 
+- [ ] **Step 2A: Add an auditable Docker Hub registry override**
+
+Decision date: 2026-07-18. Docker Desktop's Linux engine was started and both buildx
+builders became healthy, but direct `registry-1.docker.io:443` connections repeatedly
+timed out. DaoCloud's official public-image mirror resolved all three exact pinned
+multi-platform digests without changing their values.
+
+Add a global `ARG DOCKERHUB_REGISTRY=docker.io` before the first `FROM` in each
+Dockerfile and prefix Docker Official Images as
+`${DOCKERHUB_REGISTRY}/library/<image>`. The default remains Docker Hub for CI and
+deployment. For the local Step 5 builds only, pass
+`--build-arg DOCKERHUB_REGISTRY=m.daocloud.io/docker.io`. Do not change any digest,
+tag, runtime command, or daemon-global registry configuration.
+
+Commit the plan correction separately before adding container files:
+
+```bash
+git add docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "docs(plan): add Docker registry mirror override"
+```
+
 - [ ] **Step 3: Implement the backend image**
 
 Create `docker/backend.Dockerfile`:
 
 ```dockerfile
 # syntax=docker/dockerfile:1.7
-FROM python:3.13.14-slim-bookworm@sha256:9d7f287598e1a5a978c015ee176d8216435aaf335ed69ac3c38dd1bbb10e8d64 AS builder
+ARG DOCKERHUB_REGISTRY=docker.io
+FROM ${DOCKERHUB_REGISTRY}/library/python:3.13.14-slim-bookworm@sha256:9d7f287598e1a5a978c015ee176d8216435aaf335ed69ac3c38dd1bbb10e8d64 AS builder
 
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv \
     UV_LINK_MODE=copy
@@ -2226,7 +2248,7 @@ RUN uv sync --project backend --frozen --no-dev --no-install-project
 COPY backend/src ./backend/src
 RUN uv sync --project backend --frozen --no-dev
 
-FROM python:3.13.14-slim-bookworm@sha256:9d7f287598e1a5a978c015ee176d8216435aaf335ed69ac3c38dd1bbb10e8d64 AS runtime
+FROM ${DOCKERHUB_REGISTRY}/library/python:3.13.14-slim-bookworm@sha256:9d7f287598e1a5a978c015ee176d8216435aaf335ed69ac3c38dd1bbb10e8d64 AS runtime
 ENV PATH=/opt/venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -2246,7 +2268,8 @@ Create `docker/frontend.Dockerfile`:
 
 ```dockerfile
 # syntax=docker/dockerfile:1.7
-FROM node:24.18.0-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d AS builder
+ARG DOCKERHUB_REGISTRY=docker.io
+FROM ${DOCKERHUB_REGISTRY}/library/node:24.18.0-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d AS builder
 WORKDIR /workspace/frontend
 RUN npm install --global pnpm@11.13.1
 COPY frontend/package.json frontend/pnpm-lock.yaml ./
@@ -2254,7 +2277,7 @@ RUN pnpm install --frozen-lockfile
 COPY frontend/ ./
 RUN pnpm build
 
-FROM nginx:1.28.0-alpine@sha256:30f1c0d78e0ad60901648be663a710bdadf19e4c10ac6782c235200619158284 AS runtime
+FROM ${DOCKERHUB_REGISTRY}/library/nginx:1.28.0-alpine@sha256:30f1c0d78e0ad60901648be663a710bdadf19e4c10ac6782c235200619158284 AS runtime
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY --from=builder /workspace/frontend/dist /usr/share/nginx/html
 USER nginx
@@ -2302,11 +2325,11 @@ http {
 
 - [ ] **Step 5: Build both images**
 
-Run: `docker build --file docker/backend.Dockerfile --tag time-api:p0 .`
+Run: `docker build --build-arg DOCKERHUB_REGISTRY=m.daocloud.io/docker.io --file docker/backend.Dockerfile --tag time-api:p0 .`
 
 Expected: exit 0 and create image `time-api:p0`.
 
-Run: `docker build --file docker/frontend.Dockerfile --tag time-web:p0 .`
+Run: `docker build --build-arg DOCKERHUB_REGISTRY=m.daocloud.io/docker.io --file docker/frontend.Dockerfile --tag time-web:p0 .`
 
 Expected: exit 0 and create image `time-web:p0`.
 
