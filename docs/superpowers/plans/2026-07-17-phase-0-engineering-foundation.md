@@ -1613,6 +1613,7 @@ git commit -m "feat(system): add frontend service status slice"
 - Create: `contracts/openapi.json` (generated)
 - Create: `frontend/src/shared/api/schema.d.ts` (generated)
 - Create: `tools/check_contract.py`
+- Modify: `backend/pyproject.toml`
 - Modify: `frontend/src/features/system/api.ts`
 - Modify: `tools/project.py`
 - Modify: `tools/tests/test_project.py`
@@ -1832,6 +1833,33 @@ Expected: 2 tests PASS.
 Run: `pnpm --dir frontend typecheck`
 
 Expected: exit 0.
+
+- [ ] **Step 6A: Disambiguate test namespace modules for mypy**
+
+Decision date: 2026-07-18. The strict full-tree mypy command failed after the required
+`backend/tests/integration/system/__init__.py` was added because both it and
+`backend/tests/unit/system/__init__.py` were discovered as the top-level module
+`system`. The existing `unit` and `integration` directories are test partitions, not
+published Python packages.
+
+Set `explicit_package_bases = true` in `[tool.mypy]` in `backend/pyproject.toml`. Do
+not remove either required `system/__init__.py`, add ignore/exclude rules, or add
+package markers solely to influence mypy. The current mypy executable documents this
+option as using the current directory and `MYPYPATH` to determine module names. The
+controller verified the same 18 source files with `--explicit-package-bases` before
+this plan change and observed zero issues.
+
+Run:
+`uv run --project backend mypy --config-file backend/pyproject.toml backend/src backend/tests tools`
+
+Expected: exit 0 with `Success: no issues found in 18 source files`.
+
+Commit the mypy discovery correction separately:
+
+```bash
+git add backend/pyproject.toml docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "fix(backend): disambiguate mypy namespace modules"
+```
 
 - [ ] **Step 7: Commit the generated contract boundary**
 

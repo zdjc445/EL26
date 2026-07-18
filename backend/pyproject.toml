@@ -52,3 +52,4 @@ python_version = "3.13"
 strict = true
 warn_unreachable = true
 mypy_path = "$MYPY_CONFIG_FILE_DIR/src"
+explicit_package_bases = true
