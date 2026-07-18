@@ -1928,7 +1928,9 @@ def test_rule_allows_standard_library_and_own_domain_imports() -> None:
     source = "from dataclasses import dataclass\nfrom time_agent.modules.calendar.domain import Event\n"
 
     assert find_forbidden_imports(source) == frozenset()
-    assert find_cross_module_imports(source, current_module="calendar") == frozenset()
+    assert (
+        find_cross_module_imports(source, current_module="calendar") == frozenset()
+    )
 
 
 def test_rule_detects_cross_module_internal_imports() -> None:
@@ -1995,6 +1997,21 @@ def find_cross_module_imports(source: str, current_module: str) -> frozenset[str
             if imported_module != current_module:
                 imported_modules.add(imported_module)
     return frozenset(imported_modules)
+```
+
+- [ ] **Step 3A: Apply the required Ruff-safe assertion layout**
+
+Decision date: 2026-07-18. The exact Step 1 assertion produced `E501` at 104
+characters under the locked 100-character Ruff policy. Keep the policy unchanged and
+wrap only that assertion with parentheses, as shown in Step 1. This is a formatting-only
+plan correction with no test semantic change.
+
+Commit the plan correction separately; keep the corrected test in the Task 7 feature
+commit because it is a new file:
+
+```bash
+git add docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "docs(plan): correct architecture test formatting"
 ```
 
 - [ ] **Step 4: Run architecture and static verification**
