@@ -2230,12 +2230,30 @@ git add docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
 git commit -m "docs(plan): add Docker registry mirror override"
 ```
 
+- [ ] **Step 2B: Use the bundled Dockerfile frontend**
+
+Decision date: 2026-07-18. The first backend build failed before resolving its base
+image because `# syntax=docker/dockerfile:1.7` required an additional token request to
+Docker Hub, which timed out. The syntax frontend tag was not digest-pinned and cannot
+consume the Dockerfile registry build argument.
+
+Remove the external syntax directive from both Dockerfiles. These files use only
+stable multi-stage, `ARG`, `FROM`, `COPY`, `RUN`, `ENV`, `USER`, `EXPOSE`, and `CMD`
+instructions supported by the verified Docker 29.6.1 / BuildKit 0.31.1 bundled
+frontend. Do not replace it with an unpinned mirror-specific syntax image.
+
+Commit the plan correction separately:
+
+```bash
+git add docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "docs(plan): use bundled Dockerfile frontend"
+```
+
 - [ ] **Step 3: Implement the backend image**
 
 Create `docker/backend.Dockerfile`:
 
 ```dockerfile
-# syntax=docker/dockerfile:1.7
 ARG DOCKERHUB_REGISTRY=docker.io
 FROM ${DOCKERHUB_REGISTRY}/library/python:3.13.14-slim-bookworm@sha256:9d7f287598e1a5a978c015ee176d8216435aaf335ed69ac3c38dd1bbb10e8d64 AS builder
 
@@ -2267,7 +2285,6 @@ The digest is the multi-platform manifest for the official `python:3.13.14-slim-
 Create `docker/frontend.Dockerfile`:
 
 ```dockerfile
-# syntax=docker/dockerfile:1.7
 ARG DOCKERHUB_REGISTRY=docker.io
 FROM ${DOCKERHUB_REGISTRY}/library/node:24.18.0-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d AS builder
 WORKDIR /workspace/frontend
