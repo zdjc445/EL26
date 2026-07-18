@@ -2249,6 +2249,27 @@ git add docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
 git commit -m "docs(plan): use bundled Dockerfile frontend"
 ```
 
+- [ ] **Step 2C: Install the backend project as a relocatable wheel**
+
+Decision date: 2026-07-18. The first built backend image exited with status `1` and
+`ModuleNotFoundError: No module named 'time_agent'`. The builder's final `uv sync`
+used uv's default editable project installation, whose source path remained under
+`/workspace/backend`; the runtime stage copies only `/opt/venv`. The installed
+`uv==0.11.29` help confirms that `--no-editable` installs the project and workspace
+members as non-editable packages.
+
+Add `--no-editable` only to the final backend `uv sync` command, after the source is
+copied. Keep the dependency-only cache layer unchanged. This makes the application
+package self-contained under `/opt/venv` without copying builder source paths into
+the runtime image.
+
+Commit this plan correction separately before changing the Dockerfile:
+
+```bash
+git add docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "docs(plan): make backend image relocatable"
+```
+
 - [ ] **Step 3: Implement the backend image**
 
 Create `docker/backend.Dockerfile`:
@@ -2264,7 +2285,7 @@ RUN python -m pip install --no-cache-dir uv==0.11.29
 COPY backend/pyproject.toml backend/uv.lock ./backend/
 RUN uv sync --project backend --frozen --no-dev --no-install-project
 COPY backend/src ./backend/src
-RUN uv sync --project backend --frozen --no-dev
+RUN uv sync --project backend --frozen --no-dev --no-editable
 
 FROM ${DOCKERHUB_REGISTRY}/library/python:3.13.14-slim-bookworm@sha256:9d7f287598e1a5a978c015ee176d8216435aaf335ed69ac3c38dd1bbb10e8d64 AS runtime
 ENV PATH=/opt/venv/bin:$PATH \
