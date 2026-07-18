@@ -513,7 +513,7 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-  "httpx==0.28.1",
+  "httpx2==2.7.0",
   "mypy==2.3.0",
   "pytest==9.1.1",
   "pytest-asyncio==1.4.0",
@@ -542,7 +542,7 @@ line-length = 100
 select = ["E", "F", "I", "UP", "B", "ASYNC", "S", "RUF"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["S101"]
+"backend/tests/**/*.py" = ["S101"]
 
 [tool.mypy]
 python_version = "3.13"
@@ -640,6 +640,8 @@ git commit -m "build(backend): establish locked Python toolchain"
 - Create: `backend/tests/unit/system/__init__.py`
 - Create: `backend/tests/unit/system/test_live.py`
 - Delete: `backend/tests/unit/.gitkeep`
+- Modify: `backend/pyproject.toml`
+- Modify: `backend/uv.lock`
 
 **Interfaces:**
 - Consumes: `time_agent.__version__` and locked FastAPI/Pydantic dependencies from Task 2.
@@ -651,7 +653,6 @@ Create only the empty `__init__.py` files listed above, then create `backend/tes
 
 ```python
 from fastapi.testclient import TestClient
-
 from time_agent.bootstrap.app import create_app
 from time_agent.config import Settings
 
@@ -769,11 +770,39 @@ from time_agent.bootstrap.app import create_app
 app = create_app()
 ```
 
+- [ ] **Step 4A: Resolve the approved test-toolchain contract conflict**
+
+Decision date: 2026-07-18. The user approved this correction after Task 3 made the
+Task 2 test configuration executable. The RED evidence consists of one `I001`, five
+`S101` findings, and a `StarletteDeprecationWarning` that directs the test environment
+from `httpx` to `httpx2`.
+
+Change the Task 2 dev dependency from `httpx==0.28.1` to `httpx2==2.7.0`. Change the
+Ruff per-file pattern from `"tests/**/*.py"` to the repository-root-relative
+`"backend/tests/**/*.py"`, retaining only the `S101` exception. Apply Ruff's safe
+`I001` fix to the test import block; do not ignore `I001`.
+
+Run: `uv lock --project backend`
+
+Expected: updates `backend/uv.lock`, removes the direct `httpx` dependency, and locks
+`httpx2==2.7.0` as the direct test-client dependency.
+
+Run: `uv sync --project backend --all-groups --frozen`
+
+Expected: exit 0.
+
+Commit the approved dependency and configuration correction separately:
+
+```bash
+git add backend/pyproject.toml backend/uv.lock docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "fix(backend): align test toolchain contracts"
+```
+
 - [ ] **Step 5: Run focused and static verification**
 
 Run: `uv run --project backend pytest backend/tests/unit/system/test_live.py -v`
 
-Expected: 2 tests PASS.
+Expected: 2 tests PASS with no warnings.
 
 Run: `uv run --project backend ruff format --config backend/pyproject.toml --check backend tools`
 
