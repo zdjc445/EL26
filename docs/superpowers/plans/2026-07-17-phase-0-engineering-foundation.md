@@ -998,6 +998,7 @@ export default defineConfig({
     },
   },
   test: {
+    dir: "./src",
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     restoreMocks: true,
@@ -1143,6 +1144,8 @@ git commit -m "build(frontend): establish locked TypeScript toolchain"
 - Create: `frontend/src/styles/index.css`
 - Create: `frontend/playwright.config.ts`
 - Create: `frontend/tests/e2e/system-status.spec.ts`
+- Modify: `frontend/vite.config.ts`
+- Modify: `docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md`
 
 **Interfaces:**
 - Consumes: `GET /api/v1/health/live` from Task 3 and the Vite proxy from Task 4.
@@ -1268,6 +1271,26 @@ test("renders Time and confirms the real API liveness endpoint", async ({ page }
 Run: `pnpm --dir frontend test:unit`
 
 Expected: FAIL because `App` and `AppProviders` do not exist.
+
+- [ ] **Step 2A: Resolve the approved unit-test discovery conflict**
+
+Decision date: 2026-07-18. The user approved this correction after the initial RED run
+showed Vitest 4 collecting `frontend/tests/e2e/system-status.spec.ts` in addition to the
+intended component test. Configure `test.dir` as `"./src"` in `vite.config.ts`. Do not
+maintain an E2E exclude list; Vitest retains its default `*.test.*` and `*.spec.*`
+patterns inside `src`, while Playwright owns `tests/e2e`.
+
+Run: `pnpm --dir frontend test:unit`
+
+Expected: FAIL only because `App` and `AppProviders` do not exist; the output must not
+contain a Playwright runner error.
+
+Commit the discovery correction separately:
+
+```bash
+git add frontend/vite.config.ts docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "fix(frontend): isolate unit test discovery"
+```
 
 - [ ] **Step 3: Implement the typed API boundary**
 
