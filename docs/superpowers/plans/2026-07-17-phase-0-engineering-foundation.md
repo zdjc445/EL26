@@ -477,6 +477,8 @@ git commit -m "chore(repo): establish governance and command contract"
 - Create: `backend/tests/unit/.gitkeep`
 - Create: `backend/tests/integration/.gitkeep`
 - Create: `backend/tests/architecture/.gitkeep`
+- Modify: `tools/project.py`
+- Modify: `tools/tests/test_project.py`
 
 **Interfaces:**
 - Consumes: Python 3.13.14 and uv 0.11.29 from Task 1.
@@ -584,6 +586,38 @@ Expected: exit 0.
 Run: `uv run --project backend mypy --config-file backend/pyproject.toml backend/src tools`
 
 Expected: exit 0 with no issues.
+
+- [ ] **Step 4A: Resolve the approved Task 1 lint-baseline conflict**
+
+Decision date: 2026-07-18. The user approved this correction after Task 2 first made the
+locked Ruff policy executable. The initial required Ruff run is the RED evidence: it
+reports eleven `E501` findings and one `S603` finding in the committed Task 1 `tools/`
+files.
+
+Modify only formatting in `tools/project.py` and `tools/tests/test_project.py` so every
+line satisfies the configured 100-character limit. On the fixed internal command runner,
+add a narrowly scoped `# noqa: S603`; `GROUPS` is a source-controlled constant and no
+user input reaches `subprocess.run`. Do not change command values, order, `cwd`, or
+failure propagation.
+
+Run: `python -m unittest tools.tests.test_project -v`
+
+Expected: 2 tests PASS.
+
+Run: `uv run --project backend ruff format --config backend/pyproject.toml --check backend tools`
+
+Expected: exit 0.
+
+Run: `uv run --project backend ruff check --config backend/pyproject.toml backend tools`
+
+Expected: exit 0.
+
+Commit the approved correction separately:
+
+```bash
+git add tools docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "fix(repo): satisfy backend quality policy"
+```
 
 - [ ] **Step 5: Commit the locked backend toolchain**
 

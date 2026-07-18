@@ -8,23 +8,77 @@ ROOT = Path(__file__).resolve().parents[1]
 
 GROUPS: dict[str, tuple[list[str], ...]] = {
     "format": (
-        ["uv", "run", "--project", "backend", "ruff", "format", "--config", "backend/pyproject.toml", "backend", "tools"],
+        [
+            "uv",
+            "run",
+            "--project",
+            "backend",
+            "ruff",
+            "format",
+            "--config",
+            "backend/pyproject.toml",
+            "backend",
+            "tools",
+        ],
         ["pnpm", "--dir", "frontend", "format"],
     ),
     "format-check": (
-        ["uv", "run", "--project", "backend", "ruff", "format", "--config", "backend/pyproject.toml", "--check", "backend", "tools"],
+        [
+            "uv",
+            "run",
+            "--project",
+            "backend",
+            "ruff",
+            "format",
+            "--config",
+            "backend/pyproject.toml",
+            "--check",
+            "backend",
+            "tools",
+        ],
         ["pnpm", "--dir", "frontend", "format:check"],
     ),
     "lint": (
-        ["uv", "run", "--project", "backend", "ruff", "check", "--config", "backend/pyproject.toml", "backend", "tools"],
+        [
+            "uv",
+            "run",
+            "--project",
+            "backend",
+            "ruff",
+            "check",
+            "--config",
+            "backend/pyproject.toml",
+            "backend",
+            "tools",
+        ],
         ["pnpm", "--dir", "frontend", "lint"],
     ),
     "typecheck": (
-        ["uv", "run", "--project", "backend", "mypy", "--config-file", "backend/pyproject.toml", "backend/src", "backend/tests", "tools"],
+        [
+            "uv",
+            "run",
+            "--project",
+            "backend",
+            "mypy",
+            "--config-file",
+            "backend/pyproject.toml",
+            "backend/src",
+            "backend/tests",
+            "tools",
+        ],
         ["pnpm", "--dir", "frontend", "typecheck"],
     ),
     "test-unit": (
-        ["uv", "run", "--project", "backend", "pytest", "backend/tests/unit", "backend/tests/architecture", "-q"],
+        [
+            "uv",
+            "run",
+            "--project",
+            "backend",
+            "pytest",
+            "backend/tests/unit",
+            "backend/tests/architecture",
+            "-q",
+        ],
         ["pnpm", "--dir", "frontend", "test:unit"],
     ),
     "test-integration": (
@@ -104,7 +158,7 @@ GROUPS["verify"] = (
 
 def run_named(name: str) -> None:
     for command in GROUPS[name]:
-        subprocess.run(command, cwd=ROOT, check=True)
+        subprocess.run(command, cwd=ROOT, check=True)  # noqa: S603
 
 
 def main() -> None:
