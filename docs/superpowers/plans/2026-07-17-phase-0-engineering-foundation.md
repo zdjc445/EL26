@@ -1905,7 +1905,7 @@ git commit -m "build(api): enforce generated OpenAPI contract"
 
 **Interfaces:**
 - Consumes: module root `backend/src/time_agent/modules` from Task 3 and ADR-0001/ADR-0002.
-- Produces: `find_forbidden_imports(source: str) -> frozenset[str]`; `find_cross_module_imports(source: str, current_module: str) -> frozenset[str]`; repository check that every future `modules/*/domain/**/*.py` remains independent from frameworks and other modules' internals.
+- Produces: `find_forbidden_imports(source: str) -> frozenset[str]`; `find_cross_module_imports(source: str, current_module: str, *, domain_subpackage_depth: int = 0) -> frozenset[str]`; repository check that every future `modules/*/domain/**/*.py` remains independent from frameworks and other modules' internals.
 
 - [ ] **Step 1: Write tests for the rule engine and repository scan**
 
@@ -2055,6 +2055,70 @@ Commit the search-root correction separately:
 ```bash
 git add backend/pyproject.toml docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
 git commit -m "fix(backend): expose test package to mypy"
+```
+
+- [ ] **Step 4B: Close the reviewed relative-import boundary bypass**
+
+Review date: 2026-07-18. Independent review and a controller probe demonstrated that
+`find_cross_module_imports("from ...knowledge.domain import Document\n", "calendar")`
+returned an empty set while the absolute equivalent returned `{"knowledge"}`. This is
+a blocking false negative against ADR-0001's prohibition on cross-module internal
+access.
+
+Add failing tests before changing `rules.py`:
+
+```python
+def test_rule_detects_relative_cross_module_internal_imports() -> None:
+    source = "from ...knowledge.domain import Document\nfrom ... import conversations\n"
+
+    assert find_cross_module_imports(source, current_module="calendar") == frozenset(
+        {"conversations", "knowledge"}
+    )
+
+
+def test_nested_domain_relative_imports_use_the_source_depth() -> None:
+    own_source = "from ...services import CalendarService\n"
+    cross_source = "from ....knowledge.domain import Document\n"
+
+    assert (
+        find_cross_module_imports(
+            own_source,
+            current_module="calendar",
+            domain_subpackage_depth=1,
+        )
+        == frozenset()
+    )
+    assert find_cross_module_imports(
+        cross_source,
+        current_module="calendar",
+        domain_subpackage_depth=1,
+    ) == frozenset({"knowledge"})
+```
+
+Run the focused architecture tests and record RED: both new relative-import behaviors
+must fail with the current rule.
+
+Update the rule engine so absolute imports retain the existing behavior, relative
+`ImportFrom` nodes are resolved at the module boundary, and relative imports do not
+participate in forbidden external-root detection. Extend `find_cross_module_imports`
+with the keyword-only `domain_subpackage_depth: int = 0`; the module boundary is three
+parent levels above a direct `domain` source plus this subpackage depth. Handle both
+`node.module` and `from ... import name` forms. In the repository scan, pass
+`len(path.parent.relative_to(module_path / "domain").parts)` as the exact source depth.
+Existing two-argument callers remain compatible.
+
+Run: `uv run --project backend pytest backend/tests/architecture/test_module_boundaries.py -v`
+
+Expected: 6 tests PASS.
+
+Run the focused Ruff and mypy gates, followed by the complete Python suite. Do not add
+an ignore, ban all relative imports, or special-case the reviewed string.
+
+Commit the review fix separately:
+
+```bash
+git add backend/tests/architecture docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "fix(architecture): detect relative cross-module imports"
 ```
 
 - [ ] **Step 5: Commit the architecture gate**

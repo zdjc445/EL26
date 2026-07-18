@@ -26,13 +26,44 @@ def test_rule_detects_cross_module_internal_imports() -> None:
     assert find_cross_module_imports(source, current_module="calendar") == frozenset({"knowledge"})
 
 
+def test_rule_detects_relative_cross_module_internal_imports() -> None:
+    source = "from ...knowledge.domain import Document\nfrom ... import conversations\n"
+
+    assert find_cross_module_imports(source, current_module="calendar") == frozenset(
+        {"conversations", "knowledge"}
+    )
+
+
+def test_nested_domain_relative_imports_use_the_source_depth() -> None:
+    own_source = "from ...services import CalendarService\n"
+    cross_source = "from ....knowledge.domain import Document\n"
+
+    assert (
+        find_cross_module_imports(
+            own_source,
+            current_module="calendar",
+            domain_subpackage_depth=1,
+        )
+        == frozenset()
+    )
+    assert find_cross_module_imports(
+        cross_source,
+        current_module="calendar",
+        domain_subpackage_depth=1,
+    ) == frozenset({"knowledge"})
+
+
 def test_repository_domain_files_respect_module_boundaries() -> None:
     violations: dict[str, dict[str, frozenset[str]]] = {}
     for module_path in (path for path in MODULES.iterdir() if path.is_dir()):
         for path in (module_path / "domain").glob("**/*.py"):
             source = path.read_text(encoding="utf-8")
             frameworks = find_forbidden_imports(source)
-            cross_module = find_cross_module_imports(source, current_module=module_path.name)
+            cross_module = find_cross_module_imports(
+                source,
+                current_module=module_path.name,
+                domain_subpackage_depth=len(path.parent.relative_to(module_path / "domain").parts),
+            )
             if frameworks or cross_module:
                 violations[str(path.relative_to(MODULES))] = {
                     "frameworks": frameworks,
