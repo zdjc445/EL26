@@ -836,6 +836,7 @@ git commit -m "feat(system): add API liveness contract"
 - Create: `frontend/eslint.config.js`
 - Create: `frontend/.prettierignore`
 - Create: `frontend/src/test/setup.ts`
+- Modify: `docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md`
 
 **Interfaces:**
 - Consumes: Node.js 24.18.0 and pnpm 11.13.1 from Task 1.
@@ -954,7 +955,7 @@ Create `frontend/tsconfig.app.json`:
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "noFallthroughCasesInSwitch": true,
-    "types": ["vitest/globals", "@testing-library/jest-dom"]
+    "types": ["vitest/globals", "@testing-library/jest-dom/vitest"]
   },
   "include": ["src"]
 }
@@ -1033,6 +1034,10 @@ export default tseslint.config(
       "react-refresh/only-export-components": ["error", { allowConstantExport: true }],
     },
   },
+  {
+    files: ["**/*.js"],
+    extends: [tseslint.configs.disableTypeChecked],
+  },
 );
 ```
 
@@ -1061,6 +1066,25 @@ Expected: creates `frontend/pnpm-lock.yaml` with package manager `pnpm@11.13.1`.
 Run: `pnpm --dir frontend install --frozen-lockfile`
 
 Expected: exit 0 without modifying `frontend/pnpm-lock.yaml`.
+
+- [ ] **Step 3A: Resolve the approved Vitest and ESLint contract conflict**
+
+Decision date: 2026-07-18. The user approved this correction after the first exact
+Task 4 validation. The RED evidence is `TS2688` from the Jest-oriented root type entry
+and a typed `@typescript-eslint/await-thenable` rule applied to `eslint.config.js`
+without parser type information.
+
+Use `@testing-library/jest-dom/vitest` in `tsconfig.app.json`; do not install Jest or
+`@types/jest`. Keep `recommendedTypeChecked` and `projectService` for TypeScript and
+TSX. Add the official `tseslint.configs.disableTypeChecked` override only for
+`**/*.js`; JavaScript remains covered by `js.configs.recommended`.
+
+Commit this approved plan correction separately before the frontend implementation:
+
+```bash
+git add docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
+git commit -m "docs(plan): correct frontend toolchain contracts"
+```
 
 - [ ] **Step 4: Validate the frontend configuration**
 
