@@ -1,0 +1,65 @@
+{
+  "components": {
+    "schemas": {
+      "LiveStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "build_sha": {
+            "title": "Build Sha",
+            "type": "string"
+          },
+          "service": {
+            "const": "time-api",
+            "title": "Service",
+            "type": "string"
+          },
+          "status": {
+            "const": "ok",
+            "title": "Status",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "service",
+          "version",
+          "build_sha"
+        ],
+        "title": "LiveStatus",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Time API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/health/live": {
+      "get": {
+        "operationId": "getLiveStatus",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Live Status",
+        "tags": [
+          "system"
+        ]
+      }
+    }
+  }
+}

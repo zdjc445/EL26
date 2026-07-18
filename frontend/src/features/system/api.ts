@@ -1,9 +1,6 @@
-export interface LiveStatus {
-  status: "ok";
-  service: "time-api";
-  version: string;
-  build_sha: string;
-}
+import type { components } from "../../shared/api/schema";
+
+export type LiveStatus = components["schemas"]["LiveStatus"];
 
 function isLiveStatus(value: unknown): value is LiveStatus {
   if (typeof value !== "object" || value === null) {
