@@ -2,7 +2,7 @@ ARG DOCKERHUB_REGISTRY=docker.io
 FROM ${DOCKERHUB_REGISTRY}/library/node:24.18.0-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d AS builder
 WORKDIR /workspace/frontend
 RUN npm install --global pnpm@11.13.1
-COPY frontend/package.json frontend/pnpm-lock.yaml ./
+COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY frontend/ ./
 RUN pnpm build
