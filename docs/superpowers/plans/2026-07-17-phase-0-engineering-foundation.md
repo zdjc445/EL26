@@ -2907,6 +2907,15 @@ Use `superpowers:requesting-code-review`. Reviewer must check:
 
 Resolve every blocking finding and rerun affected and full verification.
 
+- [ ] **Step 5A: Record the authorized Phase 0 review waiver**
+
+Decision date: 2026-07-21. The repository collaborator list contained only the
+implementation author `zdjc445`, so an independent GitHub reviewer could not be
+assigned. The user explicitly approved waiving the independent Review gate for Phase
+0. This is a one-time phase-exit waiver; it does not remove or weaken the repository's
+branch protection, which continues to require one approving review and last-push
+approval for future protected-branch changes.
+
 - [ ] **Step 6: Commit the CI gate and phase evidence**
 
 ```bash
