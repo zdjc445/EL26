@@ -2304,6 +2304,32 @@ CMD ["uvicorn", "time_agent.main:app", "--host", "0.0.0.0", "--port", "8000", "-
 
 The digest is the multi-platform manifest for the official `python:3.13.14-slim-bookworm` image read on 2026-07-17. If execution occurs after that date, the implementer must verify the digest still resolves before building; changing it is a dependency update with its own diff and scan evidence.
 
+- [ ] **Step 3A: Replace the vulnerable backend base image**
+
+Decision date: 2026-07-21. GitHub Actions run `29796018893` built the pinned
+`python:3.13.14-slim-bookworm` backend image successfully, but Trivy 0.70.0 found 23
+Debian 12 OS vulnerabilities at HIGH or CRITICAL severity. The report listed no fixed
+version for any finding, so upgrading packages within that image cannot satisfy the
+approved blocking scan. The dependency policy forbids making the gate green by
+ignoring all unfixed vulnerabilities.
+
+Docker Official Images' current `library/python` manifest lists
+`3.13.14-alpine3.24` for the required Python version from source commit
+`f79aea5b8f6b2d65b31ba2bb3f69c0c2083345c8`. Docker Hub's registry returned the
+multi-platform manifest digest
+`sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0` for that
+exact tag on 2026-07-21.
+
+Replace both backend `FROM` references with:
+
+```dockerfile
+FROM ${DOCKERHUB_REGISTRY}/library/python:3.13.14-alpine3.24@sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0
+```
+
+Do not change the required Python version, application dependencies, Trivy severity,
+exit code, or unfixed-vulnerability behavior. Accept the replacement only when CI
+builds the image and its existing HIGH/CRITICAL Trivy gate passes.
+
 - [ ] **Step 4: Implement the frontend image and non-root Nginx configuration**
 
 Create `docker/frontend.Dockerfile`:
