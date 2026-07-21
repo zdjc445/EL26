@@ -2390,6 +2390,32 @@ http {
 }
 ```
 
+- [ ] **Step 4A: Replace the vulnerable frontend runtime base image**
+
+Decision date: 2026-07-21. GitHub Actions run `29796142512` built the pinned
+`nginx:1.28.0-alpine` frontend image successfully, but Trivy 0.70.0 found 34 Alpine
+3.21 OS vulnerabilities at HIGH or CRITICAL severity. The report identified fixed
+package versions, including OpenSSL `3.3.7-r0` and musl `1.2.5-r11`. An unversioned
+`apk upgrade` would make builds depend on mutable repository state and is therefore
+not accepted for this reproducible image.
+
+Docker Official Images' current `library/nginx` manifest lists stable
+`1.30.4-alpine3.24` from source commit
+`ccdab6c99ae2e2fc53a144dc68d6b8f44163adf2`. Docker Hub's registry returned the
+multi-platform manifest digest
+`sha256:97d490c12ba55b4946b01546d1c3ed324e8d41ab1c9fcb2a616aa470620e5b46` for that
+exact tag on 2026-07-21.
+
+Replace only the frontend runtime `FROM` reference with:
+
+```dockerfile
+FROM ${DOCKERHUB_REGISTRY}/library/nginx:1.30.4-alpine3.24@sha256:97d490c12ba55b4946b01546d1c3ed324e8d41ab1c9fcb2a616aa470620e5b46 AS runtime
+```
+
+Keep the non-root user, Nginx configuration, health probe contract, Trivy severity,
+exit code, and unfixed-vulnerability behavior unchanged. Accept the replacement only
+when CI builds the image and its existing HIGH/CRITICAL Trivy gate passes.
+
 - [ ] **Step 5: Build both images**
 
 Run: `docker build --build-arg DOCKERHUB_REGISTRY=m.daocloud.io/docker.io --file docker/backend.Dockerfile --tag time-api:p0 .`
