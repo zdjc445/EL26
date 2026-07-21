@@ -47,6 +47,7 @@
 ### 本地优先实施计划
 
 - [V1 本地优先主体应用实施总计划](superpowers/plans/2026-07-21-v1-local-first-application.md)
+- [Milestone 1 身份与工作台实施计划](superpowers/plans/2026-07-21-m1-identity-workbench.md)
 
 ## 生命周期
 

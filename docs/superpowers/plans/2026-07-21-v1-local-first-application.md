@@ -35,7 +35,7 @@
 7. 公开 API 固定在 `/api/v1`，每个任务同步 OpenAPI 与生成 TypeScript 类型。
 8. 每个功能先写失败测试，确认失败原因，再实现最小行为并运行完整相关门禁。
 9. 内存开发辅助接口必须同时满足 `TIME_RUNTIME_PROFILE=memory` 与
-   `TIME_ENVIRONMENT=development`；其他配置返回 404。
+   `TIME_ENVIRONMENT=local`；其他配置返回 404。
 10. 未获得真实契约前不创建 `production` profile 或供应商专有字段。
 
 ## 交付序列
