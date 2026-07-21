@@ -2785,7 +2785,7 @@ Create `.github/branch-protection.json`:
   "block_creations": false,
   "required_conversation_resolution": true,
   "lock_branch": false,
-  "allow_fork_syncing": true
+  "allow_fork_syncing": false
 }
 ```
 
@@ -2857,6 +2857,19 @@ Commit this plan correction separately before creating Task 9 files:
 git add docs/superpowers/plans/2026-07-17-phase-0-engineering-foundation.md
 git commit -m "docs(plan): reuse local registry mirror in final gate"
 ```
+
+- [ ] **Step 3B: Align fork syncing with the unlocked branch policy**
+
+Decision date: 2026-07-21. The branch-protection PUT succeeded, but the subsequent GET
+returned `allow_fork_syncing.enabled: false` while the submitted JSON contained
+`allow_fork_syncing: true`. GitHub's REST contract defines fork syncing as permission
+to pull upstream changes when the protected branch is locked. This policy deliberately
+sets `lock_branch: false`, so fork syncing is inapplicable and GitHub normalizes it to
+false.
+
+Set `allow_fork_syncing` to `false` in both the plan payload and
+`.github/branch-protection.json`. Do not lock `main`. Reapply the payload and require
+the subsequent GET to match all submitted values.
 
 - [ ] **Step 4: Run final local verification**
 
