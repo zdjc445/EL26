@@ -7,7 +7,7 @@ RUN pnpm install --frozen-lockfile
 COPY frontend/ ./
 RUN pnpm build
 
-FROM ${DOCKERHUB_REGISTRY}/library/nginx:1.28.0-alpine@sha256:30f1c0d78e0ad60901648be663a710bdadf19e4c10ac6782c235200619158284 AS runtime
+FROM ${DOCKERHUB_REGISTRY}/library/nginx:1.30.4-alpine3.24@sha256:97d490c12ba55b4946b01546d1c3ed324e8d41ab1c9fcb2a616aa470620e5b46 AS runtime
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY --from=builder /workspace/frontend/dist /usr/share/nginx/html
 USER nginx
