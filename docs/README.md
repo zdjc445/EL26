@@ -42,6 +42,11 @@
 - [ADR-0001：模块化单体与运行时拆分](adr/0001-modular-monolith-runtime-split.md)
 - [ADR-0002：LangGraph 编排与 LangChain 边界](adr/0002-langgraph-orchestration-boundary.md)
 - [ADR-0003：纯文本 RAG 与检索架构](adr/0003-text-rag-retrieval-architecture.md)
+- [ADR-0004：运行配置与内存适配器边界](adr/0004-runtime-profile-and-memory-adapters.md)
+
+### 本地优先实施计划
+
+- [V1 本地优先主体应用实施总计划](superpowers/plans/2026-07-21-v1-local-first-application.md)
 
 ## 生命周期
 
