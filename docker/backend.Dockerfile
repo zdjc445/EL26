@@ -1,5 +1,5 @@
 ARG DOCKERHUB_REGISTRY=docker.io
-FROM ${DOCKERHUB_REGISTRY}/library/python:3.13.14-slim-bookworm@sha256:9d7f287598e1a5a978c015ee176d8216435aaf335ed69ac3c38dd1bbb10e8d64 AS builder
+FROM ${DOCKERHUB_REGISTRY}/library/python:3.13.14-alpine3.24@sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0 AS builder
 
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv \
     UV_LINK_MODE=copy
@@ -10,7 +10,7 @@ RUN uv sync --project backend --frozen --no-dev --no-install-project
 COPY backend/src ./backend/src
 RUN uv sync --project backend --frozen --no-dev --no-editable
 
-FROM ${DOCKERHUB_REGISTRY}/library/python:3.13.14-slim-bookworm@sha256:9d7f287598e1a5a978c015ee176d8216435aaf335ed69ac3c38dd1bbb10e8d64 AS runtime
+FROM ${DOCKERHUB_REGISTRY}/library/python:3.13.14-alpine3.24@sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0 AS runtime
 ENV PATH=/opt/venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
